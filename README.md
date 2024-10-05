@@ -1,2 +1,3 @@
 # signal-processing
-This repository is for studying about signal processing
+
+This repository is for learning and practicing signal processing
