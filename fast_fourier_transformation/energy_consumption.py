@@ -21,10 +21,10 @@ def clear_plot_params():
     plt.cla()
 
 #======================================================================
-# pre-rocess and plot raw data
+# pre-process and plot raw data
 #======================================================================
 # If script is ran from root directory of the repo, join paths to the data folder
-csv_file_path = os.path.join( current_directory, 'energy_consumption\\data\\AEP_hourly.csv' )
+csv_file_path = os.path.join( current_directory, 'data\\AEP_hourly.csv' )
 
 # set x and y data
 data_fft = pd.read_csv( csv_file_path, encoding="utf-8" )
@@ -68,14 +68,14 @@ f_nat = 1
 new_X = np.linspace( 10 ** -12, f_nat / 2, new_N, endpoint=True )
 
 # Convert frequencies to periods
-new_Xph = 1.0/( new_X )
+new_Xph = 1.0 / ( new_X )
 
 # Calculate the magnitude of the FFT components
 FFT_abs = np.abs( FFT )
 
 clear_plot_params()
 
-plt.plot( new_Xph, 2 * FFT_abs[ 0:int( len( FFT ) / 2. ) ] / len( new_Xph ), color='black' )
+plt.plot( new_Xph, 2 * FFT_abs[ 0 : int( len( FFT ) / 2. ) ] / len( new_Xph ), color='black' )
 plt.xlabel( 'Period ($h$)', fontsize=20 )
 plt.ylabel( 'Amplitude', fontsize=20 )
 plt.title( '(Fast) Fourier Transform Method Algorithm', fontsize=20 )
@@ -87,7 +87,7 @@ plt.show()
 '''
 anaylsis
 
-There's a pattern of reacurring usage ever 12 hour, 24 hour, 3 day, and 7 day periods
+There's a pattern of reacurring usage every 12 hour, 24 hour, 3 day, and 7 day periods
 
 analysis of frequencies:
 7 days: some reasoning for patterns of high energy consumptions repeating every 7 days could be due
@@ -102,14 +102,51 @@ analysis of frequencies:
           time every morning, or turning on lights at a certain time.
 
 12 hours: Could represent shifts in energy use for example day vs night time.
-
 '''
 
 
-fft_abs = 2 * FFT_abs[0:int(len(FFT)/2.)]/len(new_Xph)
-fft_abs = pd.DataFrame(fft_abs, columns = ['Amplitude'])
-fft_sorted = fft_abs.sort_values(by='Amplitude',ascending=False).head(20)
+fft_abs = 2 * FFT_abs[ 0 : int( len( FFT ) / 2. ) ] / len( new_Xph )
+fft_abs = pd.DataFrame( fft_abs, columns = [ 'Amplitude' ] )
+fft_sorted = fft_abs.sort_values( by='Amplitude', ascending=False ).head( 20 )
 
 print( fft_sorted )
 
 
+#======================================================================
+# Noise filtering 
+#======================================================================
+# Defining the filtering function
+def fft_filter( th ):
+    fft_tof = FFT.copy()
+    fft_tof_abs = np.abs( fft_tof )
+    fft_tof_abs = 2 * fft_tof_abs / len( new_Xph )
+    fft_tof[ fft_tof_abs <= th ] = 0
+    return fft_tof
+
+# Showing the plots at different thresholds values
+# Defining the amplitude filtering function
+def fft_filter_amp( th ):
+    fft_tof = FFT.copy()
+    fft_tof_abs = np.abs( fft_tof )
+    fft_tof_abs= 2 * fft_tof_abs / len( new_Xph )
+    fft_tof_abs[ fft_tof_abs <= th ] = 0
+    return fft_tof_abs[ 0 : int( len( fft_tof_abs ) / 2. ) ]
+
+K_plot = [ 10, 200, 700, 1500 ]
+j = 0
+
+clear_plot_params()
+
+for k in K_plot:
+    j = j + 1
+    plt.subplot( 2, 2, j )
+    plt.title( 'k=%i' % ( k ) )
+    plt.xlim( 0, 200 )
+    plt.plot( new_Xph, 2 * FFT_abs[ 0 : int( len( FFT ) / 2. ) ] /len( new_Xph ), color='navy', alpha=0.5, label='Original' )
+    plt.grid( True )
+    plt.plot( new_Xph, fft_filter_amp( k ), 'red', label='Filtered' )
+    plt.xlabel( 'Time($h$)' )
+    plt.ylabel( 'Amplitude' )
+    plt.legend()
+plt.subplots_adjust( hspace = 0.5 )
+plt.show()
